@@ -84,7 +84,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
   ;Finds http:// directories for the given files
 
   ff=getjsoc_synoptic_read(t1,t2,wave = 304,/nodat,info=info,file=files,remfile=remfiles,outind=inds)
-
+  ; Store ff in case of cadence change
   ;; Checks to see if there is data for the given date
 
   IF (ff[0] ne '') THEN BEGIN
@@ -634,6 +634,30 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
           read, newint, prompt ='Type in a new cadence (default = 6): '
           if(valid_num(newint, /integer)) THEN BEGIN
             run_epatrol, whichevent, infile, logfilein, newint
+;            ff=getjsoc_synoptic_read(t1,t2,wave = 304,/nodat,info=info,file=files,remfile=remfiles,outind=inds)
+;            numimg = n_elements(ff)
+;            imgnum = findgen(numimg)
+;            ff = ff[where(imgnums mod cadence eq 0)]
+;            numimg = n_elements(ff)
+;            set_plot,'x'
+;            
+;            ffloc = ''
+;            FOR i=0, nimg-1 DO BEGIN
+;              IF (i eq 0) THEN BEGIN
+;                ffloc = [dir+ strmid(ff[i], 43)]
+;              ENDIF ELSE BEGIN
+;                ffloc = [ffloc, dir+ strmid(ff[i], 43)]
+;              ENDELSE
+;
+;            ENDFOR
+;            read_sdo,ffloc,indarr,datarr,/noshell
+;            print, 'Ready!'
+;            print, h1
+;            print, h2
+;            print, h3
+;            print, h4
+;            
+;            
             break
           endif else begin
             print, 'Invalid Input'
