@@ -83,8 +83,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
 
   ;Finds http:// directories for the given files
 
-  ff=getjsoc_synoptic_read(t1,t2,wave = 304,/nodat, $ ; cadence=20*60., $
-    info=info,file=files,remfile=remfiles,outind=inds)
+  ff=getjsoc_synoptic_read(t1,t2,wave = 304,/nodat,info=info,file=files,remfile=remfiles,outind=inds)
 
   ;; Checks to see if there is data for the given date
 
@@ -136,9 +135,11 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
     h1 = 'Press h to view this message again'
     h2 = 'q - quit, s - skip current cluster, d - back, f - forward, e- list events, m - play movie, g - input data, c - set new cadence'
     h3 = 'i - toggle automatic event snapshots, o - toggle event location plotting, u - toggle difference ratio maps'
+    h4 = ', - go back one hour in the data, . - go forward one hour in the data'
     print, h1
     print, h2
     print, h3
+    print, h4
 
     window,0,xsize=1024,ysize=1024
 
@@ -172,7 +173,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
           difmap = 0
         endelse
       endelse
-
+   
 ;      if(difmap eq 0) then begin
 ;        plot_map,imap,/log,grid = 10, drange = [0, 2000]
 ;      endif else begin
@@ -201,6 +202,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
         print, h1
         print, h2
         print, h3
+        print, h4
       ENDIF
 
       IF (keyin eq '~') THEN STOP
@@ -229,6 +231,72 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
         ENDELSE
 
       ENDIF
+      
+      ;Go back one hour in the data
+      
+      IF (keyin eq ',') THEN BEGIN
+        t0 = anytim(t1-3600)
+        new = getjsoc_synoptic_read(t0,t1,wave = 304,/nodat,info=info,file=files,remfile=remfiles,outind=inds)
+        newlocs =''
+        
+        ;Filter out data out of cadence
+        numimg = n_elements(new)
+        imgnum=findgen(numimg)
+        new=new[where(imgnum mod cadence eq 0)]
+        numimg = n_elements(new)
+        
+        FOR i=0, numimg-1 DO BEGIN
+          IF (i eq 0) THEN BEGIN
+            newlocs = [dir+ strmid(new[i], 43)]
+          ENDIF ELSE BEGIN
+            newlocs = [newlocs, dir+ strmid(new[i], 43)]
+          ENDELSE
+        ENDFOR
+        nimg +=numimg-1
+         read_sdo,newlocs,newind,newdata,/noshell
+         newind = newind[0:n_elements(newind)-2]
+         newdata = newdata[*,*,0:n_elements(newdata[0,0,*])-2]
+         indarr = [newind,indarr]
+         datarr = [[[newdata]],[[datarr]]]
+         
+         ;Reset time variables
+         t1 = t0
+         print, 'Ready!'
+      ENDIF
+      
+      ;Go forward one hour in the data
+      
+      IF (keyin eq '.') THEN BEGIN
+        t3 = anytim(t2+3600)
+        new = getjsoc_synoptic_read(t2,t3,wave = 304,/nodat,info=info,file=files,remfile=remfiles,outind=inds)
+        newlocs =''
+
+        ;Filter out data out of cadence
+        numimg = n_elements(new)
+        imgnum=findgen(numimg)
+        new=new[where(imgnum mod cadence eq 0)]
+        numimg = n_elements(new)
+
+        FOR i=0, numimg-1 DO BEGIN
+          IF (i eq 0) THEN BEGIN
+            newlocs = [dir+ strmid(new[i], 43)]
+          ENDIF ELSE BEGIN
+            newlocs = [newlocs, dir+ strmid(new[i], 43)]
+          ENDELSE
+        ENDFOR
+        
+        nimg +=numimg-1
+        read_sdo,newlocs,newind,newdata,/noshell
+        newind = newind[1:*]
+        newdata = newdata[*,*,1:*]
+        indarr = [indarr,newind]
+        datarr = [[[datarr]],[[newdata]]]
+        
+        ;Reset time variables
+        t2 = t3
+        print, 'Ready!'
+      ENDIF
+
 
       ;Toggles event location plotting for current cluster
 
@@ -248,7 +316,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
         IF(difmap eq 0) THEN BEGIN
           for i=0, nimg-1,1 do begin
             index2map,indarr[i],datarr[*,*,i],imap
-
+            polyfill,[-600,-600,600,600,-600],[1226,1300,1300,1226,1226],col = 0,/data
             plot_map,imap,/log, grid = 10, /noerase, drange = [0, 2000]
             wait,0.1
           endfor
@@ -258,7 +326,11 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
             index2map,indarr[i+1],datarr[*,*,i+1],map2
             diff = map2
             diff.data = (map2.data-map1.data)/map2.data
+            polyfill,[-600,-600,600,600,-600],[1226,1300,1300,1226,1226],col = 0,/data
             plot_map,diff,/log,grid = 10, drange = [0.02, 1.75],/noerase
+            
+            ;clears out 
+
           endfor
         ENDELSE
 
@@ -359,6 +431,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
               vline,xstore1 & hline,ystore1
               print, '1 done'
               print, xstore1 & print, ystore1
+              thisline.xloc1 = xstore1 & thisline.yloc1 = ystore1
               wait,0.5
               counter1 += 1
             ENDIF ELSE BEGIN
@@ -375,6 +448,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
               vline,xstore2 & hline,ystore2
               print, '1 done'
               print, xstore1 & print, ystore1
+              thisline.xloc1 = xstore1 & thisline.yloc1 = ystore1
               wait,0.5
             ENDELSE
           ENDIF
@@ -390,6 +464,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
               vline,xstore2 & hline,ystore2
               print, '2 done'
               print, xstore2 & print, ystore2
+              thisline.xloc2 = xstore2 & thisline.yloc2 = ystore2
               wait,0.5
               counter2 +=1
             ENDIF ELSE BEGIN
@@ -406,6 +481,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
               vline,xstore2 & hline,ystore2
               print, '2 done'
               print, xstore2 & print, ystore2
+              thisline.xloc2 = xstore2 & thisline.yloc2 = ystore2
               wait,0.5
             ENDELSE
           ENDIF
@@ -413,8 +489,8 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
         ENDWHILE
 
 
-        thisline.xloc1 = xstore1 & thisline.yloc1 = ystore1
-        thisline.xloc2 = xstore2 & thisline.yloc2 = ystore2
+;        thisline.xloc1 = xstore1 & thisline.yloc1 = ystore1
+;        thisline.xloc2 = xstore2 & thisline.yloc2 = ystore2
 
         ;      store1 = [xstore1,ystore1]
         ;      store2 = [xstore2,ystore2]
@@ -507,7 +583,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
           endelse
           
           xyouts,-800,1400,'Cluster ID:' +string(thisline.cluster) +' Evtime: '+ string(thisline.tinit)+ ' Region: '+string(thisline.region)+ ' Flare: ' + string(thisline.flare) + ' Surge: ' + string(thisline.surge),font = 42
-          ;        oplot, [xstore1,xstore2,xstore2,xstore1,xstore1],[ystore1,ystore1,ystore2,ystore2,ystore1] ;Bounding Box /does not seem to work
+          oplot, [thisline.xloc1,thisline.xloc2,thisline.xloc2,thisline.xloc1,thisline.xloc1],[thisline.yloc1,thisline.yloc1,thisline.yloc2,thisline.yloc2,thisline.yloc1],col = 0 ;Bounding Box /does not seem to work
           zb_plot = tvrd(true=1)
 
           pic = 0
