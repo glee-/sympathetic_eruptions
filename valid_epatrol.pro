@@ -557,7 +557,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
             plot_map,imap,/log,grid = 10, drange = [0, 2000]
             time = indarr[counter].date_obs
             thisline.tinit = anytim(time,/ecs)
-            plots, xsource, ysource, ps = 8, color = 0 ;Plot symbol to source location
+;            plots, xsource, ysource, ps = 8, color = 0 ;Plot symbol to source location
           endif else begin
             if(difmap eq 1) then begin
               if (counter eq 0) then begin
@@ -566,14 +566,14 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
                 diff = map1
                 diff.data = (map1.data-map2.data)/map1.data
                 plot_map,diff,/log,grid = 10, drange = [0.02, 1.75]
-                plots, xsource, ysource, ps = 8, color = 14772545;Plot symbol to source location
+;                plots, xsource, ysource, ps = 8, color = 14772545;Plot symbol to source location
               endif else begin
                 index2map,indarr[counter-1],datarr[*,*,counter-1],map1
                 index2map,indarr[counter],datarr[*,*,counter],map2
                 diff = map2
                 diff.data = (map2.data-map1.data)/map2.data
                 plot_map,diff,/log,grid = 10, drange = [0.02, 1.75]
-                plots, xsource, ysource, ps = 8, color = 14772545;Plot symbol to source location
+;                plots, xsource, ysource, ps = 8, color = 14772545;Plot symbol to source location
               endelse
             endif else begin
               print, 'Something went wrong!'
@@ -583,7 +583,7 @@ pro run_epatrol, whichevent, infile, logfilein, cadencein, difmap,snap,evplot, v
           endelse
           
           xyouts,-800,1400,'Cluster ID:' +string(thisline.cluster) +' Evtime: '+ string(thisline.tinit)+ ' Region: '+string(thisline.region)+ ' Flare: ' + string(thisline.flare) + ' Surge: ' + string(thisline.surge),font = 42
-          oplot, [thisline.xloc1,thisline.xloc2,thisline.xloc2,thisline.xloc1,thisline.xloc1],[thisline.yloc1,thisline.yloc1,thisline.yloc2,thisline.yloc2,thisline.yloc1],col = 0 ;Bounding Box /does not seem to work
+          oplot, [thisline.xloc1,thisline.xloc2,thisline.xloc2,thisline.xloc1,thisline.xloc1],[thisline.yloc1,thisline.yloc1,thisline.yloc2,thisline.yloc2,thisline.yloc1],col = 0 ;Bounding Box 
           zb_plot = tvrd(true=1)
 
           pic = 0
